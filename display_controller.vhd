@@ -1,0 +1,122 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+-- Including the constants and types package
+use work.constants_and_types.all;
+
+entity display_controller is
+    Port (
+        clk             : in STD_LOGIC;  -- System clock
+        reset           : in STD_LOGIC;  -- System reset
+        current_state   : in T_State;  -- Current state from state machine
+        snack_choice    : in T_Snack_Number;  -- Snack choice from snack selector
+        snack_price     : in T_Price;  -- Price of the selected snack
+        cash_inserted   : in T_Amount;  -- Amount of cash inserted
+        change_to_give  : in T_Change;  -- Change to be given
+        segments        : out T_Seven_Segment_Display -- Seven segment display output
+    );
+end display_controller;
+
+architecture Behavioral of display_controller is
+    -- Signal for each digit to be displayed
+	 type display_data_type is array(0 to 5) of STD_LOGIC_VECTOR(3 downto 0);
+    signal display_data : display_data_type;
+begin
+
+    -- Process to control display data based on the current state
+    process(clk, reset)
+    begin
+        if reset = '1' then
+            display_data <= (others => (others => '0'));
+        elsif rising_edge(clk) then
+            case current_state is
+                when ST_WAITING =>
+                    display_data(0) <= "0011";  -- 'C'
+                    display_data(1) <= "1000";  -- 'H'
+                    display_data(2) <= "0111";  -- 'O'
+                    display_data(3) <= "0111";  -- 'O'
+                    display_data(4) <= "0100";  -- 'S'
+                    display_data(5) <= "1110";  -- 'E'
+
+                when ST_CHOOSING_SNACK =>
+                    -- Check if snack_choice is less than 10 (single digit)
+							if snack_choice < 10 then
+							  -- Display snack number on a single hex display (e.g., display_data(0))
+							  display_data(0) <= std_logic_vector(to_unsigned(integer(snack_choice), 4));
+							  display_data(1) <= (others => '0'); -- Turn off the other display or display zero
+							else
+							  -- Display snack number on both hex displays (two digits)
+							  display_data(0) <= std_logic_vector(to_unsigned(integer(snack_choice) / 10, 4)); -- First digit
+							  display_data(1) <= std_logic_vector(to_unsigned(integer(snack_choice) mod 10, 4)); -- Second digit
+							end if;
+
+							-- Display price
+							display_data(4) <= std_logic_vector(to_unsigned(integer(snack_price) / 10, 4));
+							display_data(5) <= std_logic_vector(to_unsigned(integer(snack_price) mod 10, 4));
+
+                when ST_ERROR =>
+                    display_data <= (others => "1110");  -- 'E'
+
+                when ST_PAYING_CASH =>
+							 -- Display the amount of cash inserted
+						 if cash_inserted < 10 then
+							  display_data(0) <= std_logic_vector(to_unsigned(integer(cash_inserted), 4));
+							  display_data(1) <= (others => '0');
+						 else
+							  display_data(0) <= std_logic_vector(to_unsigned(integer(cash_inserted) / 10, 4));
+							  display_data(1) <= std_logic_vector(to_unsigned(integer(cash_inserted) mod 10, 4));
+						 end if;
+
+						 -- Display 'P'
+						 display_data(3) <= "1010";  -- 'P'
+
+						 -- Display snack price
+						 if snack_price < 10 then
+							  display_data(4) <= (others => '0'); -- Turn off the other display or display zero
+							  display_data(5) <= std_logic_vector(to_unsigned(integer(snack_price), 4));
+						 else
+							  display_data(4) <= std_logic_vector(to_unsigned(integer(snack_price) / 10, 4)); -- First digit
+							  display_data(5) <= std_logic_vector(to_unsigned(integer(snack_price) mod 10, 4)); -- Second digit
+						 end if;
+
+                when ST_PAYING_CARD =>
+						 display_data(3) <= "1010";  -- Display 'P'
+						 display_data(4) <= "1010";  -- Display 'P'
+						 display_data(5) <= "1010";  -- Display 'P'
+
+					 when ST_PROCESSING =>
+						 display_data(2) <= "1010";  -- Display 'A'
+						 display_data(3) <= "1011";  -- Display 'C'
+						 display_data(4) <= "1110";  -- Display 'P'
+
+					 when ST_GETTING_SNACK =>
+						 display_data <= (others => "1010");  -- Display 'U'
+
+					 when ST_GETTING_CHANGE =>
+						 display_data(0) <= "1100";  -- 'C'
+							-- Check if change_to_give is less than 10 (single digit)
+						if change_to_give < 10 then
+							display_data(4) <= (others => '0'); -- Turn off the other display or display zero
+							display_data(5) <= std_logic_vector(to_unsigned(integer(change_to_give), 4));
+						else
+							display_data(4) <= std_logic_vector(to_unsigned(integer(change_to_give) / 10, 4)); -- First digit
+							display_data(5) <= std_logic_vector(to_unsigned(integer(change_to_give) mod 10, 4)); -- Second digit
+						end if;
+
+                when others =>
+                    display_data <= (others => (others => '0'));
+            end case;
+        end if;
+    end process;
+
+    -- Instantiate seven segment encoders for each display
+    gen_led_encoders: for i in 0 to 5 generate
+        led_encoder : entity work.seven_segment_encoder
+            port map (
+                bin_input => display_data(i),
+                segments => segments(i)
+            );
+    end generate gen_led_encoders;
+
+end Behavioral;
