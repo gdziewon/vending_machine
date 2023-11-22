@@ -31,7 +31,7 @@ begin
             when "1010" => segments <= "0001000"; -- A
             when "1011" => segments <= "1100000"; -- C
             when "1100" => segments <= "0110001"; -- E
-            when "1101" => segments <= "1000010"; -- O
+            when "1101" => segments <= "1111111"; -- Turn Off
             when "1110" => segments <= "0111000"; -- P
             when "1111" => segments <= "0111010"; -- U
             when others => segments <= "1111111"; -- Off or invalid input

@@ -23,13 +23,13 @@ begin
     begin
         -- Convert binary switches input to an integer for snack number
         v_snack_number := T_Snack_Number(to_integer(unsigned(switches)));
-        snack_number <= v_snack_number;
-
-        -- Check if the snack number is within the valid range
+		  -- Check if the snack number is within the valid range
         if integer(v_snack_number) <= MAX_SNACK_NUMBER - 1 then
             valid_choice <= '1'; -- Valid snack number
         else
             valid_choice <= '0'; -- Invalid snack number
         end if;
+		  
+        snack_number <= v_snack_number;
     end process;
 end Behavioral;

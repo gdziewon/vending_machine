@@ -10,7 +10,8 @@ entity state_machine is
         reset           : in STD_LOGIC; -- System reset
         snack_choice    : in T_Snack_Number; -- Input from snack selector
 		  valid_choice    : in STD_LOGIC; -- Indicates if choice is valid from payment_processor
-        payment_mode    : in STD_LOGIC; -- Signal for card(1) or cash(0) payment
+        payment_cash    : in STD_LOGIC; -- Signal for card(1) payment
+		  payment_card    : in STD_LOGIC; -- Signal for cash(1) payment
 		  
         payment_done    : in STD_LOGIC; -- Signal indicating payment is done
 		  
@@ -25,7 +26,7 @@ begin
     -- Process to handle state transitions
     process(clk, reset)
     begin
-        if reset = '1' then
+        if reset = '0' then
             internal_state <= ST_WAITING;
         elsif rising_edge(clk) then
             case internal_state is
@@ -37,11 +38,11 @@ begin
                 when ST_CHOOSING_SNACK =>
                     if valid_choice = '0' then
                         internal_state <= ST_ERROR;
-                    elsif snack_choice = 0 then
+                    elsif integer(snack_choice) = 0 then
                         internal_state <= ST_WAITING;
-                    elsif payment_mode = '0' then
+                    elsif payment_cash = '1' then
                         internal_state <= ST_PAYING_CASH;
-                    elsif payment_mode = '1' then
+                    elsif payment_card = '1' then
                         internal_state <= ST_PAYING_CARD;
                     end if;
 
