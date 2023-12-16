@@ -41,17 +41,6 @@ architecture Behavioral of display_controller is
 		end case;
 		return "0000";
 		end function;
-			
-	function resetAll(state : T_State) return T_State is
-  begin
-			display_data(0) <= "01101";  -- Turn off all;
-         display_data(1) <= "01101";  
-         display_data(2) <= "01101";  
-         display_data(3) <= "01101";  
-         display_data(4) <= "01101";  
-         display_data(5) <= "01101";
-			return state;
-  end function;
 begin
 
     -- Process to control display data based on the current state
@@ -62,9 +51,6 @@ begin
         elsif rising_edge(clk) then
             case current_state is
                 when ST_WAITING =>
-							if prev_state /= ST_WAITING then
-								prev_state <= resetAll(ST_WAITING);
-							end if;
                     display_data(0) <= "01011";  -- 'C'
                     display_data(1) <= "10000";  -- 'H'
                     display_data(2) <= "00000";  -- 'O'
@@ -73,9 +59,6 @@ begin
                     display_data(5) <= "01100";  -- 'E'
 
                 when ST_CHOOSING_SNACK =>
-							if prev_state /= ST_CHOOSING_SNACK then
-								prev_state <= resetAll(ST_CHOOSING_SNACK);
-							end if;
                     -- Check if snack_choice is less than 10 (single digit)
 							if integer(snack_choice) < 10 then
 							  -- Display snack number on a single hex display (e.g., display_data(0))
@@ -100,9 +83,6 @@ begin
 							end if;
 
                 when ST_ERROR =>
-							if prev_state /= ST_ERROR then
-								prev_state <= resetAll(ST_ERROR);
-							end if;
                     display_data(0) <= "01100";  -- 'E'
                     display_data(1) <= "10001";  -- 'r'
                     display_data(2) <= "10001";  -- 'r'
@@ -111,9 +91,6 @@ begin
                     display_data(5) <= "01101"; -- turn off
 
                 when ST_PAYING_CASH =>
-							if prev_state /= ST_PAYING_CASH then
-								prev_state <= resetAll(ST_PAYING_CASH);
-							end if;
 							 -- Display the amount of cash inserted
 						 if integer(cash_inserted) < 10 then
 							  display_data(0) <= numberToVector(integer(cash_inserted));
@@ -137,9 +114,6 @@ begin
 						 end if;
 
                 when ST_PAYING_CARD =>
-							if prev_state /= ST_PAYING_CARD then
-								prev_state <= resetAll(ST_PAYING_CARD);
-							end if;
 						 display_data(0) <= "01101";  -- Turn off
 					    display_data(1) <= "01101";  -- Turn off
 					    display_data(2) <= "01101";  -- Turn off
@@ -148,9 +122,6 @@ begin
 						 display_data(5) <= "01110";  -- Display 'P'
 
 					 when ST_PROCESSING =>
-							if prev_state /= ST_PROCESSING then
-								prev_state <= resetAll(ST_PROCESSING);
-							end if;
 						 display_data(0) <= "01101";  -- Turn off
 						 display_data(1) <= "01101";  -- Turn off
 						 display_data(2) <= "01010";  -- Display 'A'
@@ -159,9 +130,6 @@ begin
 						 display_data(5) <= "01101";  -- Turn off
 
 					 when ST_GETTING_SNACK =>
-							if prev_state /= ST_GETTING_SNACK then
-								prev_state <= resetAll(ST_GETTING_SNACK);
-							end if;
 						 display_data(0) <= "01010";  -- Turn off
 						 display_data(1) <= "01010";  -- Turn off
 						 display_data(2) <= "01010";  -- Display 'A'
@@ -170,9 +138,6 @@ begin
 						 display_data(5) <= "01010";  -- Turn off
 
 					 when ST_GETTING_CHANGE =>
-							if prev_state /= ST_GETTING_CHANGE then
-								prev_state <= resetAll(ST_GETTING_CHANGE);
-							end if;
 						 display_data(0) <= "01100";  -- 'C'
 						 display_data(1) <= "01101";  -- Turn off
 							-- Check if change_to_give is less than 10 (single digit)
@@ -185,7 +150,7 @@ begin
 						end if;
 
                 when others =>
-                    prev_state <= resetAll(ST_WAITING);
+                    display_data <= (others => (others => '0'));
             end case;
         end if;
     end process;

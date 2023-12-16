@@ -18,9 +18,9 @@ package constants_and_types is
 
     -- Signals for the output of the snack selector and the payment processor
     type T_Snack_Number is range 0 to 15; -- 4-bit range for snack number
-    type T_Price is range 0 to 15; -- 8-bit range for price
-    type T_Amount is range 0 to 15; -- 8-bit range for amount entered
-    type T_Change is range 0 to 15; -- 8-bit range for change to be given
+    type T_Price is range 0 to 15; -- 4-bit range for price
+    type T_Amount is range 0 to 15; -- 4-bit range for amount entered
+    type T_Change is range 0 to 15; -- 4-bit range for change to be given
 
     -- Custom type for the seven-segment display
     type T_Seven_Segment is array(0 to 6) of STD_LOGIC; -- For a seven-segment display
@@ -29,9 +29,8 @@ package constants_and_types is
     -- Define a specific type for the array of snack prices
     type T_Snack_Prices_Array is array(T_Snack_Number) of T_Price;
 
-    -- Constants for the snack prices (adjust as needed)
     constant SNACK_PRICES : T_Snack_Prices_Array := (
-		 0 => 10,   -- Snack 0 costs 50 units
+		 0 => 10,
 		 1 => 12,  
 		 2 => 5,  
 		 3 => 3,  
