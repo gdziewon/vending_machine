@@ -20,8 +20,38 @@ end display_controller;
 
 architecture Behavioral of display_controller is
     -- Signal for each digit to be displayed
-	 type display_data_type is array(0 to 5) of STD_LOGIC_VECTOR(3 downto 0);
+	 type display_data_type is array(0 to 5) of STD_LOGIC_VECTOR(4 downto 0);
     signal display_data : display_data_type;
+	 signal prev_state : T_State := ST_WAITING;
+	 
+	 function numberToVector(number : integer) return STD_LOGIC_VECTOR is
+	 begin 
+		case number is
+			when 1 => return "00001";
+			when 2 => return "00010";
+			when 3 => return "00011";
+			when 4 => return "00100";
+			when 5 => return "00101";
+			when 6 => return "00110";
+			when 7 => return "00111";
+			when 8 => return "01000";
+			when 9 => return "01001";
+			when 0 => return "00000";
+			when others => return "00000";
+		end case;
+		return "0000";
+		end function;
+			
+	function resetAll(state : T_State) return T_State is
+  begin
+			display_data(0) <= "01101";  -- Turn off all;
+         display_data(1) <= "01101";  
+         display_data(2) <= "01101";  
+         display_data(3) <= "01101";  
+         display_data(4) <= "01101";  
+         display_data(5) <= "01101";
+			return state;
+  end function;
 begin
 
     -- Process to control display data based on the current state
@@ -32,94 +62,130 @@ begin
         elsif rising_edge(clk) then
             case current_state is
                 when ST_WAITING =>
-                    display_data(0) <= "0011";  -- 'C'
-                    display_data(1) <= "1000";  -- 'H'
-                    display_data(2) <= "0000";  -- 'O'
-                    display_data(3) <= "0000";  -- 'O'
-                    display_data(4) <= "0100";  -- 'S'
-                    display_data(5) <= "1110";  -- 'E'
+							if prev_state /= ST_WAITING then
+								prev_state <= resetAll(ST_WAITING);
+							end if;
+                    display_data(0) <= "01011";  -- 'C'
+                    display_data(1) <= "10000";  -- 'H'
+                    display_data(2) <= "00000";  -- 'O'
+                    display_data(3) <= "00000";  -- 'O'
+                    display_data(4) <= "00101";  -- 'S'
+                    display_data(5) <= "01100";  -- 'E'
 
                 when ST_CHOOSING_SNACK =>
+							if prev_state /= ST_CHOOSING_SNACK then
+								prev_state <= resetAll(ST_CHOOSING_SNACK);
+							end if;
                     -- Check if snack_choice is less than 10 (single digit)
 							if integer(snack_choice) < 10 then
 							  -- Display snack number on a single hex display (e.g., display_data(0))
-							  display_data(0) <= std_logic_vector(to_unsigned(integer(snack_choice), 4));
-							  display_data(1) <=  "1101";  -- Turn off the other display or display zero
+							  display_data(0) <= numberToVector(integer(snack_choice));
+							  display_data(1) <=  "01101";  -- Turn off the other display or display zero
 							else
 							  -- Display snack number on both hex displays (two digits)
-							  display_data(0) <= std_logic_vector(to_unsigned(integer(snack_choice) , 8))(7 downto 4); -- First digit
-							  display_data(1) <= std_logic_vector(to_unsigned(integer(snack_choice) , 8))(3 downto 0); -- Second digit
+							  display_data(0) <= "00001"; -- First digitinteger
+							  display_data(1) <= numberToVector(integer(snack_choice) - 10); -- Second digit
 							end if;
-							display_data(2) <= "1101";-- Turn off
-							display_data(3) <= "1101";-- Turn off
+							
+							display_data(2) <= "01101";-- Turn off
+							display_data(3) <= "01110";-- P
 
 							-- Display price
-							display_data(4) <= std_logic_vector(to_unsigned(integer(snack_price), 8))(7 downto 4);
-							display_data(5) <= std_logic_vector(to_unsigned(integer(snack_price), 8))(3 downto 0);
+							if integer(snack_price) < 10 then
+								display_data(4) <= numberToVector(integer(snack_price));
+								display_data(5) <=  "01101";
+							else
+								display_data(4) <= "00001";
+								display_data(5) <= numberToVector(integer(snack_price) - 10);
+							end if;
 
                 when ST_ERROR =>
-                    display_data <= (others => "1110");  -- 'E'
+							if prev_state /= ST_ERROR then
+								prev_state <= resetAll(ST_ERROR);
+							end if;
+                    display_data(0) <= "01100";  -- 'E'
+                    display_data(1) <= "10001";  -- 'r'
+                    display_data(2) <= "10001";  -- 'r'
+                    display_data(3) <= "10010";  -- 'o'
+                    display_data(4) <= "10001";  -- 'r'
+                    display_data(5) <= "01101"; -- turn off
 
                 when ST_PAYING_CASH =>
+							if prev_state /= ST_PAYING_CASH then
+								prev_state <= resetAll(ST_PAYING_CASH);
+							end if;
 							 -- Display the amount of cash inserted
 						 if integer(cash_inserted) < 10 then
-							  display_data(0) <= std_logic_vector(to_unsigned(integer(cash_inserted), 4));
-							  display_data(1) <= (others => '0');
+							  display_data(0) <= numberToVector(integer(cash_inserted));
+							  display_data(1) <= "01101";
 						 else
-							  display_data(0) <= std_logic_vector(to_unsigned(integer(cash_inserted), 8))(7 downto 4);
-							  display_data(1) <= std_logic_vector(to_unsigned(integer(cash_inserted), 8))(3 downto 0);
+							  display_data(0) <= "00001";
+							  display_data(1) <= numberToVector(integer(cash_inserted) - 10);
 						 end if;
 
-						 display_data(2) <= "1101";  -- Turn off
-						 display_data(3) <= "1010";  -- 'P'
+						 display_data(2) <= "01101";  -- Turn off
+						 display_data(3) <= "01110";  -- 'P'
 
 						 -- Display snack price
 						 if snack_price < 10 then
-							  display_data(4) <=  "1101";  -- Turn off
-							  display_data(5) <= std_logic_vector(to_unsigned(integer(snack_price), 4));
+								display_data(4) <= numberToVector(integer(snack_price));
+							  display_data(5) <=  "01101";  -- Turn off
+							  
 						 else
-							  display_data(4) <= std_logic_vector(to_unsigned(integer(snack_price), 8))(7 downto 4); -- First digit
-							  display_data(5) <= std_logic_vector(to_unsigned(integer(snack_price) , 8))(3 downto 0); -- Second digit
+							  display_data(4) <= "00001"; -- First digit
+							  display_data(5) <= numberToVector(integer(snack_price) - 10); -- Second digit
 						 end if;
 
                 when ST_PAYING_CARD =>
-						 display_data(0) <= "1101";  -- Turn off
-					    display_data(1) <= "1101";  -- Turn off
-					    display_data(2) <= "1101";  -- Turn off
-						 display_data(3) <= "1010";  -- Display 'P'
-						 display_data(4) <= "1010";  -- Display 'P'
-						 display_data(5) <= "1010";  -- Display 'P'
+							if prev_state /= ST_PAYING_CARD then
+								prev_state <= resetAll(ST_PAYING_CARD);
+							end if;
+						 display_data(0) <= "01101";  -- Turn off
+					    display_data(1) <= "01101";  -- Turn off
+					    display_data(2) <= "01101";  -- Turn off
+						 display_data(3) <= "01110";  -- Display 'P'
+						 display_data(4) <= "01110";  -- Display 'P'
+						 display_data(5) <= "01110";  -- Display 'P'
 
 					 when ST_PROCESSING =>
-						 display_data(0) <= "1101";  -- Turn off
-						 display_data(1) <= "1101";  -- Turn off
-						 display_data(2) <= "1010";  -- Display 'A'
-						 display_data(3) <= "1011";  -- Display 'C'
-						 display_data(4) <= "1110";  -- Display 'P'
-						 display_data(5) <= "1101";  -- Turn off
+							if prev_state /= ST_PROCESSING then
+								prev_state <= resetAll(ST_PROCESSING);
+							end if;
+						 display_data(0) <= "01101";  -- Turn off
+						 display_data(1) <= "01101";  -- Turn off
+						 display_data(2) <= "01010";  -- Display 'A'
+						 display_data(3) <= "01011";  -- Display 'C'
+						 display_data(4) <= "01110";  -- Display 'P'
+						 display_data(5) <= "01101";  -- Turn off
 
 					 when ST_GETTING_SNACK =>
-						 display_data(0) <= "1010";  -- Turn off
-						 display_data(1) <= "1010";  -- Turn off
-						 display_data(2) <= "1010";  -- Display 'A'
-						 display_data(3) <= "1010";  -- Display 'C'
-						 display_data(4) <= "1010";  -- Display 'P'
-						 display_data(5) <= "1010";  -- Turn off
+							if prev_state /= ST_GETTING_SNACK then
+								prev_state <= resetAll(ST_GETTING_SNACK);
+							end if;
+						 display_data(0) <= "01010";  -- Turn off
+						 display_data(1) <= "01010";  -- Turn off
+						 display_data(2) <= "01010";  -- Display 'A'
+						 display_data(3) <= "01010";  -- Display 'C'
+						 display_data(4) <= "01010";  -- Display 'P'
+						 display_data(5) <= "01010";  -- Turn off
 
 					 when ST_GETTING_CHANGE =>
-						 display_data(0) <= "1100";  -- 'C'
-						 display_data(1) <= "1101";  -- Turn off
+							if prev_state /= ST_GETTING_CHANGE then
+								prev_state <= resetAll(ST_GETTING_CHANGE);
+							end if;
+						 display_data(0) <= "01100";  -- 'C'
+						 display_data(1) <= "01101";  -- Turn off
 							-- Check if change_to_give is less than 10 (single digit)
 						if integer(change_to_give) < 10 then
 							display_data(4) <= (others => '0'); -- Turn off the other display or display zero
-							display_data(5) <= std_logic_vector(to_unsigned(integer(change_to_give), 4));
+							display_data(5) <= numberToVector(integer(change_to_give));
 						else
-							display_data(4) <= std_logic_vector(to_unsigned(integer(change_to_give), 8))(7 downto 4); -- First digit
-							display_data(5) <= std_logic_vector(to_unsigned(integer(change_to_give), 8))(3 downto 0); -- Second digit
+							display_data(4) <= "00001"; -- First digit
+							display_data(5) <= numberToVector(integer(change_to_give) - 10); -- Second digit
 						end if;
 
                 when others =>
-                    display_data <= (others => (others => '0'));
+                    prev_state <= resetAll(ST_WAITING);
             end case;
         end if;
     end process;

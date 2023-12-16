@@ -13,7 +13,6 @@ entity vending_machine is
         btn1            : in STD_LOGIC;  -- Button for cash payment
         btn2            : in STD_LOGIC;  -- Button for card payment
         btn_pay         : in STD_LOGIC;  -- Button to confirm payment
-        amount_entered  : in T_Amount;   -- Amount entered for cash payment
         segments        : out T_Seven_Segment_Display -- 6x7-segment display outputs
     );
 end vending_machine;
@@ -25,7 +24,10 @@ architecture Behavioral of vending_machine is
         Port (
             switches       : in STD_LOGIC_VECTOR (3 downto 0);
             snack_number   : out T_Snack_Number;
-            valid_choice   : out STD_LOGIC
+				cash_inserted : in STD_LOGIC_VECTOR (3 downto 0);
+            valid_choice   : out STD_LOGIC;
+				cash_entered : out T_Amount;
+				no_choice      : out STD_LOGIC
         );
     end component;
 
@@ -33,7 +35,7 @@ architecture Behavioral of vending_machine is
         Port (
             payment_cash   : in STD_LOGIC;
 				payment_card   : in STD_LOGIC; 
-            amount_entered : in T_Amount;
+            cash_entered : in T_Amount;
             price          : in T_Price;
             pay_signal     : in STD_LOGIC;
             change_given   : out STD_LOGIC;
@@ -55,6 +57,7 @@ architecture Behavioral of vending_machine is
             reset          : in STD_LOGIC;
             snack_choice   : in T_Snack_Number;
             valid_choice   : in STD_LOGIC;
+				no_choice       :in STD_LOGIC;
             payment_cash   : in STD_LOGIC;
 				payment_card   : in STD_LOGIC; 
             payment_done   : in STD_LOGIC;
@@ -79,6 +82,7 @@ architecture Behavioral of vending_machine is
     -- Signals for inter-component communication
     signal snack_number      : T_Snack_Number;
     signal valid_choice      : STD_LOGIC;
+	 signal no_choice         :STD_LOGIC; 
     signal price             : T_Price;
     signal current_state     : T_State;
     signal payment_cash     : STD_LOGIC;
@@ -96,7 +100,10 @@ begin
         port map (
             switches     => switches(3 downto 0),
             snack_number => snack_number,
-            valid_choice => valid_choice
+				cash_inserted => switches(7 downto 4),
+            valid_choice => valid_choice,
+				cash_entered => cash_entered,
+				no_choice => no_choice
         );
 
     price_display_inst : price_display
@@ -125,14 +132,6 @@ begin
             end if;
         end if;
     end process;
-	 
-	 process(clk)
-    begin
-        if rising_edge(clk) then
-            -- Assign the value from switches 7-4 to cash_entered
-            cash_entered <= T_Amount(to_integer(unsigned(switches(7 downto 4))));
-        end if;
-    end process;
 
     -- Logic to generate payment confirmation signal
     process(clk, reset, btn_pay)
@@ -152,7 +151,7 @@ begin
         port map (
             payment_cash   => payment_cash,
 				payment_card   => payment_card,
-            amount_entered => cash_entered,
+            cash_entered => cash_entered,
             price          => price,
             pay_signal     => pay_signal,
             change_given   => change_given,
@@ -166,6 +165,7 @@ begin
             reset          => reset,
             snack_choice   => snack_number,
             valid_choice   => valid_choice,
+				no_choice      => no_choice,
             payment_card   => payment_card,
 				payment_cash   => payment_cash,
             payment_done   => payment_valid,
@@ -180,11 +180,10 @@ begin
             current_state  => current_state,
             snack_choice   => snack_number,
             snack_price    => price,
-            cash_inserted  => amount_entered,
+            cash_inserted  => cash_entered,
             change_to_give => change,
             segments       => segments
         );
 
 end Behavioral;
-
 

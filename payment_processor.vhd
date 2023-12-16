@@ -12,7 +12,7 @@ entity payment_processor is
     Port (
         payment_cash   : in STD_LOGIC; -- '1' for cash
 		  payment_card   : in STD_LOGIC; -- '1' for card
-        amount_entered : in T_Amount; -- Amount entered for cash payment
+        cash_entered : in T_Amount; -- Amount entered for cash payment
         price          : in T_Price; -- Price of the selected snack
 		  
 		  pay_signal     : in STD_LOGIC; -- If button to pay is pressed
@@ -26,7 +26,7 @@ end payment_processor;
 architecture Behavioral of payment_processor is
 begin
     -- Process to determine if payment is valid and to calculate change
-    process(payment_cash, payment_card, amount_entered, price)
+    process(payment_cash, payment_card, cash_entered, price)
 		variable int_change : integer;
     begin
         -- Reset output signals
@@ -35,10 +35,10 @@ begin
 		  change_given <= '0';
 
         if payment_cash = '1' then -- Cash payment
-            if integer(amount_entered) >= integer(price) then
+            if integer(cash_entered) >= integer(price) then
 					 if pay_signal = '1' then
 						payment_valid <= '1';
-						int_change := integer(amount_entered) - integer(price);
+						int_change := integer(cash_entered) - integer(price);
 						if int_change = 0 then
 							change_given <= '0';
 						else
